@@ -1,0 +1,96 @@
+"""
+@author: Ojas Goyal
+"""
+
+# Answer to Exercise 1:
+import pandas as pd
+file_path = '/Users/ojasgoyal/Desktop/loan-data-v1.csv'
+loan_data = pd.read_csv(file_path)
+filtered_data = loan_data[loan_data['Days Delinquent'] >= 90]
+sorted_data = filtered_data.sort_values(by='Days Delinquent', ascending=False)
+selected_columns = sorted_data[["Name", "State", "Days Delinquent", "Years as Customer"]]
+print(selected_columns.head())
+output_file_path = '/Users/ojasgoyal/Desktop/loan-data-output-v1.csv'
+selected_columns.to_csv(output_file_path, index=False)
+
+#%%
+# Answer to Exercise 2:
+import sqlite3
+import pandas as pd
+conn = sqlite3.connect('./app-db.sqlite')
+query_info = "SELECT * FROM app_info"
+query_stats = "SELECT * FROM app_stats"
+df_info = pd.read_sql_query(query_info, conn)
+df_stats = pd.read_sql_query(query_stats, conn)
+conn.close()
+
+merged_df = pd.merge(df_info, df_stats, on='app_name')
+q2ans1 = merged_df.head(5)
+
+numeric_cols = ['size', 'price', 'rating', 'reviews', 'installs']
+numeric_df = merged_df[numeric_cols]
+q2ans2 = numeric_df.describe()
+
+non_numeric_cols = ['category', 'type', 'content_rating']
+non_numeric_df = merged_df[non_numeric_cols]
+q2ans3 = non_numeric_df.describe()
+
+q2ans4 = numeric_df.corr()
+
+q2ans5 = merged_df['category'].value_counts()
+
+q2ans6 = merged_df.groupby('content_rating').mean()
+
+q2ans7 = merged_df.groupby('type').mean()
+
+q2ans8 = merged_df.groupby('category').mean()
+
+q2ans9 = q2ans8.idxmax()
+
+filtered_df = merged_df[merged_df['installs'] >= 100000000]
+filtered_df.to_excel("most-installed-apps.xlsx", index=False)
+
+#%%
+# Answer to Exercise 3:
+#conda install -c conda-forge wordcloud
+#installed new library
+
+# 1. The specialized container datatype Counter from the collections library
+# Counter is a specialized container datatype in Python's collections library, used for counting hashable objects. It essentially creates a dictionary-like object where keys are the unique elements in the input iterable and values are the corresponding counts of those elements.
+
+# 2. The most_common() method of the Counter datatype.
+# most_common() is a method of the Counter datatype that returns the n most common elements and their counts in the Counter object.
+
+import pandas as pd
+from collections import Counter
+from wordcloud import STOPWORDS
+
+# Define stopwords set
+stopwords = set(STOPWORDS)
+stopwords.update({'app'})  # Add 'app' to stopwords
+
+def remove_punctuations(old_str):
+    punctuations = '!#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
+    new_str = ''.join(filter(lambda x: x not in punctuations, old_str))
+    return new_str
+
+# Read data
+df = pd.read_csv("app-review.txt", sep='\r\n', header=None)
+
+# Combine the text column into a single string variable
+text_combined = ' '.join(df[0].values)
+
+# Change the text to lowercase and remove all punctuations
+text_lowercase_no_punctuations = remove_punctuations(text_combined.lower())
+
+# Tokenize the text and excluding any stopwords
+tokenized_words = [word for word in text_lowercase_no_punctuations.split() if word not in stopwords]
+
+# Use Counter and its method to get the top-5 most common words
+word_counter = Counter(tokenized_words)
+top_5_common_words = word_counter.most_common(5)
+
+# Print to the console the most common words
+print("Top 5 most common words:")
+for word, count in top_5_common_words:
+    print(f"{word}: {count}")
